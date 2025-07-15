@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Listening</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #eef4f8;
+      margin: 0;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #1f3b57;
+    }
+    .section, .start-section {
+      max-width: 700px;
+      margin: 30px auto;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    label {
+      font-weight: bold;
+      color: #333;
+    }
+    input[type="text"], input[type="number"] {
+      padding: 8px;
+      margin: 5px 0 15px;
+      width: calc(100% - 16px);
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .question {
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    .choices button, .verify-btn {
+      padding: 8px 14px;
+      margin: 5px 5px 5px 0;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      font-weight: 600;
+    }
+    .choices button {
+      background-color: #cfe2ff;
+      color: #083b66;
+    }
+    .choices button:hover {
+      background-color: #a6c8ff;
+    }
+    .tick {
+      background: #d1e7dd;
+      color: #0f5132;
+    }
+    .cross {
+      background: #f8d7da;
+      color: #842029;
+    }
+    .tick.selected {
+      background-color: #198754;
+      color: white;
+    }
+    .cross.selected {
+      background-color: #dc3545;
+      color: white;
+    }
+    .hidden {
+      display: none;
+    }
+    .result-box {
+      text-align: center;
+      margin-top: 30px;
+      font-weight: bold;
+      font-size: 1.3em;
+      color: #1f3b57;
+    }
+    button:focus {
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bienvenido al Listening</h1>
+  <h2>Por favor, pon tu nombre y Candidate Number</h2>
+
+  <div class="start-section" id="start">
+    <label>Nombre:</label><br>
+    <input type="text" id="name"><br>
+    <label>Candidate Number:</label><br>
+    <input type="text" id="candidate"><br>
+    <button onclick="startExam()">Comenzar</button>
+  </div>
+
+  <div class="section hidden" id="exam">
+    <div id="questions"></div>
+    <div class="result-box" id="result"></div>
+    <button onclick="calculateScore()">Calcular resultado</button>
+  </div>
+
+  <script>
+    const parts = {
+      1: {start: 1, end: 7, type: 'abc'},
+      2: {start: 8, end: 13, type: 'abc'},
+      3: {start: 14, end: 19, type: 'text'},
+      4: {start: 20, end: 25, type: 'abc'}
+    };
+    let answers = {};
+
+    function startExam() {
+      if (!document.getElementById('name').value || !document.getElementById('candidate').value) {
+        alert("Por favor introduce tu nombre y candidate number");
+        return;
+      }
+      document.getElementById('start').classList.add('hidden');
+      document.getElementById('exam').classList.remove('hidden');
+      generateQuestions();
+    }
+
+    function generateQuestions() {
+      const container = document.getElementById('questions');
+      for (let p = 1; p <= 4; p++) {
+        const part = parts[p];
+        const section = document.createElement('div');
+        section.innerHTML = `<h3>Part ${p}</h3>`;
+
+        for (let i = part.start; i <= part.end; i++) {
+          const q = document.createElement('div');
+          q.className = 'question';
+          q.innerHTML = `<label>${i}.</label> `;
+
+          if (part.type === 'abc') {
+            q.innerHTML += `
+              <div class="choices">
+                <button onclick="select('${i}', 'A')">A</button>
+                <button onclick="select('${i}', 'B')">B</button>
+                <button onclick="select('${i}', 'C')">C</button>
+              </div>`;
+          } else {
+            q.innerHTML += `<input type="text" id="answer_${i}">`;
+          }
+          q.innerHTML += `
+            <div class="verify">
+              <button class="verify-btn tick" id="tick_${i}" onclick="mark('${i}', true)">✔</button>
+              <button class="verify-btn cross" id="cross_${i}" onclick="mark('${i}', false)">✘</button>
+            </div>`;
+          section.appendChild(q);
+        }
+        container.appendChild(section);
+      }
+    }
+
+    function select(q, val) {
+      document.getElementById(`answer_${q}`)?.remove();
+      const existing = document.querySelector(`#selected_${q}`);
+      if (existing) existing.remove();
+      const el = document.createElement('span');
+      el.id = `selected_${q}`;
+      el.textContent = ` Opción seleccionada: ${val}`;
+      document.querySelector(`[onclick*="select('${q}'"]`).parentElement.parentElement.appendChild(el);
+      answers[q] = { selected: val, correct: null };
+    }
+
+    function mark(q, correct) {
+      if (!answers[q]) answers[q] = {};
+      answers[q].correct = correct;
+
+      const tickBtn = document.getElementById(`tick_${q}`);
+      const crossBtn = document.getElementById(`cross_${q}`);
+
+      tickBtn.classList.remove('selected');
+      crossBtn.classList.remove('selected');
+
+      if (correct) {
+        tickBtn.classList.add('selected');
+      } else {
+        crossBtn.classList.add('selected');
+      }
+    }
+
+    function calculateScore() {
+      let total = 0;
+      let outOf = 25;
+      for (let i = 1; i <= 25; i++) {
+        if (answers[i]?.correct) total++;
+      }
+
+      // Cálculo del porcentaje
+      const porcentaje = total / outOf;
+      // Fórmula de nota sobre 160
+      let nota = 140 + ((porcentaje - 0.7) * (20 / 0.3));
+      nota = Math.max(0, Math.min(nota, 160)); // Limitar entre 0 y 160
+      const notaFinal = Math.round(nota * 10) / 10;
+
+      let status = "";
+      if (notaFinal < 140) {
+        status = "❌ SUSPENSO";
+      } else if (notaFinal < 150) {
+        status = "✅ APROBADO";
+      } else {
+        status = "🎉 NOTABLE / SOBRESALIENTE";
+      }
+
+      document.getElementById('result').innerText =
+        `Has sacado ${total} / 25 → Nota estimada: ${notaFinal} puntos sobre 160 → ${status}`;
+    }
+  </script>
+</body>
+</html>
